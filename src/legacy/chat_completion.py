@@ -19,13 +19,13 @@ class ChatCompletion:
     ) -> str:
         max_completion_tokens = (
             self.conversation_history.max_history_token_count
-            - self.conversation_history.get_token_count()
+            - self.conversation_history._get_token_count()
         )
         # NOTE: Not sure why/if we need to reduce the max completion tokens by 5%
         max_completion_tokens = int(max_completion_tokens * 0.95)
         logging.info(
             "Conversation history tokens: %s",
-            self.conversation_history.get_token_count(),
+            self.conversation_history._get_token_count(),
         )
         logging.info("Max completion tokens: %s", max_completion_tokens)
         response = openai.ChatCompletion.create(

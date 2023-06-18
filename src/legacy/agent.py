@@ -3,8 +3,8 @@ from textwrap import dedent
 from typing import Iterable, List, Optional, Union
 
 from sembla.actions import ActionModule
-from sembla.chat_completion import ChatCompletion
 from sembla.conversation_history import ConversationHistory, Message
+from sembla.llm.chat_completion import ChatCompletion
 from sembla.prompt.handler import PromptHandler
 from sembla.response.handler import ResponseHandler
 from sembla.response.processor import ResponseProcessor
@@ -79,7 +79,7 @@ class AgentBase:
             {"role": "system", "content": system_prompt}
         )
         if initial_memory:
-            self._conversation_history.extend_history(initial_memory)
+            self._conversation_history._extend_history(initial_memory)
 
         self._response_processors = response_processors
         self._response_handler = ResponseHandler(

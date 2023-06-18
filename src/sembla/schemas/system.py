@@ -9,8 +9,9 @@ class TaskStatus(Enum):
     Represents the status of the current task.
     """
 
-    COMPLETE = auto()
-    INCOMPLETE = auto()
+    COMPLETE = "COMPLETE"
+    INCOMPLETE = "INCOMPLETE"
+    UNDEFINED = "UNDEFINED"
 
 
 class TaskState(BaseModel):
@@ -25,10 +26,10 @@ class TaskState(BaseModel):
         current_cycle: The current cycle of the task.
     """
 
-    name: str
-    description: str
-    status: TaskStatus = TaskStatus.INCOMPLETE
-    max_cycles: Optional[int] = 10
+    name: Optional[str] = None
+    description: Optional[str] = None
+    status: TaskStatus = TaskStatus.UNDEFINED
+    max_cycles: Optional[int] = None
     current_cycle: int = 0
 
 
@@ -60,10 +61,12 @@ class Message(BaseModel):
     Attributes:
         role: The role the message author.
         content: The content of the message.
+        name: The name of the message author.
     """
 
     role: str
     content: str
+    name: Optional[str] = None
 
 
 class MemoryState(BaseModel):
@@ -71,10 +74,12 @@ class MemoryState(BaseModel):
     Represents the memory of the system.
     """
 
-    max_history_message_count: int = 20
+    max_history_message_count: int = 100
     max_history_token_count: int = 1000
     conversation_history: List[Message] = []
     conversation_buffer: List[Message] = []
+    message_count: int = 0
+    token_count: int = 0
 
 
 class Action(BaseModel):
@@ -131,15 +136,13 @@ class SystemState(BaseModel):
     Shared state for the system.
     """
 
-    task: TaskState = TaskState(
-        name="conversation", description="Have a conversation with the user."
-    )
+    task: TaskState = TaskState()
     model: ModelState = ModelState()
     memory: MemoryState = MemoryState()
-    user_input: Optional[str] = None
+    user_query: Optional[str] = None
     available_actions: List[Action] = []
-    prompt_processing: List[ProcessorOutput] = []
+    prompt_processor_outputs: List[ProcessorOutput] = []
     processed_prompt: Optional[str] = None
     agent_response: Optional[str] = None
-    response_processing: List[ProcessorOutput] = []
+    response_processor_outputs: List[ProcessorOutput] = []
     processed_response: Optional[str] = None
