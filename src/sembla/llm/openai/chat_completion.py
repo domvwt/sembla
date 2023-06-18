@@ -9,7 +9,7 @@ def convert_message_to_openai_format(message: Message) -> Dict[str, str]:
     return {"role": message.role, "content": message.content}
 
 
-def generate_openai_chat_completion(system_state: SystemState) -> SystemState:
+def generate_chat_completion(system_state: SystemState) -> SystemState:
     model = system_state.model.name
     temperature = system_state.model.temperature
     n = system_state.model.n
