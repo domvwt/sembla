@@ -4,7 +4,7 @@ from typing import Iterable, List, Optional, Union
 
 from sembla.actions import ActionModule
 from sembla.conversation_history import ConversationHistory, Message
-from sembla.llm.chat_completion import ChatCompletion
+from sembla.llm.openai.chat_completion import ChatCompletion
 from sembla.prompt.handler import PromptHandler
 from sembla.response.handler import ResponseHandler
 from sembla.response.processor import ResponseProcessor
