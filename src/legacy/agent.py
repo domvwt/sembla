@@ -9,7 +9,7 @@ from sembla.prompt.handler import PromptHandler
 from sembla.response.handler import ResponseHandler
 from sembla.response.processor import ResponseProcessor
 from sembla.schemas.actions import Action
-from sembla.schemas.base import BaseModel
+from sembla.schemas.base import BaseSchema
 
 
 # TODO: Refactor this class so that it is more modular and easier to test.
@@ -30,7 +30,7 @@ class AgentBase:
         agent_role: str = ...,
         agent_instructions: Optional[str] = None,
         agent_actions: Optional[List[Action]] = None,
-        example_response: Optional[BaseModel] = None,
+        example_response: Optional[BaseSchema] = None,
         structured_response_format: Optional[str] = "yaml",
         response_processors: Optional[Iterable[ResponseProcessor]] = None,
         initial_memory: Optional[List[Message]] = None,

@@ -1,7 +1,10 @@
+import importlib
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Type
 
-from .base import BaseModel
+from pydantic import Field, root_validator, validator
+
+from .base import BaseSchema
 
 
 class TaskStatus(Enum):
@@ -14,7 +17,7 @@ class TaskStatus(Enum):
     UNDEFINED = "UNDEFINED"
 
 
-class TaskState(BaseModel):
+class TaskState(BaseSchema):
     """
     Represents the state of the current task.
 
@@ -33,7 +36,7 @@ class TaskState(BaseModel):
     current_cycle: int = 0
 
 
-class ModelState(BaseModel):
+class ModelState(BaseSchema):
     """
     Represents a model that is used by the system.
 
@@ -54,12 +57,12 @@ class ModelState(BaseModel):
     presence_penalty: float = 0
 
 
-class Message(BaseModel):
+class Message(BaseSchema):
     """
     Represents a message in a conversation.
 
     Attributes:
-        role: The role the message author.
+        role: The role of the message author.
         content: The content of the message.
         name: The name of the message author.
     """
@@ -69,7 +72,7 @@ class Message(BaseModel):
     name: Optional[str] = None
 
 
-class MemoryState(BaseModel):
+class MemoryState(BaseSchema):
     """
     Represents the memory of the system.
     """
@@ -82,9 +85,32 @@ class MemoryState(BaseModel):
     token_count: int = 0
 
 
+ActionCallable = Callable[..., str]
+
+
+from pydantic import BaseModel
+from typing import Callable, Optional
+import importlib
+
 class Action(BaseModel):
     name: str
-    callable: Callable
+    callable_name: Optional[str] = None
+
+    def __init__(self, **data):
+        # If 'callable' is provided as a function, convert it to a string for 'callable_name'
+        if callable(data.get('callable')):
+            data['callable_name'] = f"{data['callable'].__module__}.{data['callable'].__name__}"
+            del data['callable']
+        super().__init__(**data)
+
+    @property
+    def callable(self):
+        if self.callable_name:
+            module_name, function_name = self.callable_name.rsplit('.', 1)
+            module = importlib.import_module(module_name)
+            return getattr(module, function_name)
+        else:
+            return None
 
     @classmethod
     def from_callable(cls, callable: Callable) -> "Action":
@@ -94,14 +120,14 @@ class Action(BaseModel):
         )
 
 
-class ActionCall(BaseModel):
-    action: str
+class ActionCall(BaseSchema):
+    name: str
     parameters: Optional[dict]
 
 
-class ActionOutput(BaseModel):
+class ActionOutput(BaseSchema):
     action: ActionCall
-    agent_messages: List[Message] = []
+    output: str
 
 
 class ProcessingStatus(Enum):
@@ -119,7 +145,7 @@ class ProcessingStatus(Enum):
     Error = auto()
 
 
-class ProcessorOutput(BaseModel):
+class ProcessorOutput(BaseSchema):
     """
     Represents the output of a prompt or response processor.
     """
@@ -131,18 +157,61 @@ class ProcessorOutput(BaseModel):
     data: Optional[Dict[str, Any]] = None
 
 
-class SystemState(BaseModel):
+class UserQuery(BaseSchema):
     """
-    Shared state for the system.
+    Represents the user's query.
     """
 
+    raw_query: str
+    processed_query: Optional[str] = None
+
+
+class ResponseSchema(BaseSchema):
+    """
+    Represents the schema of a response.
+    """
+
+    goal: str
+    objectives: List[str]
+    observations: List[str]
+    action: ActionCall
+
+
+class AgentResponse(BaseSchema):
+    """
+    Represents the response of the agent.
+    """
+
+    raw_response: str
+    parsed_response: Optional[ResponseSchema] = None
+    processor_outputs: List[ProcessorOutput] = []
+    processed_response: Optional[str] = None
+
+
+class SystemState(BaseSchema):
     task: TaskState = TaskState()
     model: ModelState = ModelState()
+    system_prompt: Optional[str] = None
+    response_schema_class: Optional[str] = None
     memory: MemoryState = MemoryState()
-    user_query: Optional[str] = None
-    available_actions: List[Action] = []
-    prompt_processor_outputs: List[ProcessorOutput] = []
-    processed_prompt: Optional[str] = None
-    agent_response: Optional[str] = None
-    response_processor_outputs: List[ProcessorOutput] = []
-    processed_response: Optional[str] = None
+    actions: List[Action] = []
+    user_query: Optional[UserQuery] = None
+    agent_response: Optional[AgentResponse] = None
+
+    def __init__(self, **data):
+        # If 'response_schema' is provided as a class, convert it to a string for 'response_schema_class'
+        if isinstance(data.get("response_schema"), type):
+            data[
+                "response_schema_class"
+            ] = f"{data['response_schema'].__module__}.{data['response_schema'].__name__}"
+            del data["response_schema"]
+        super().__init__(**data)
+
+    @property
+    def response_schema(self):
+        if self.response_schema_class:
+            module_name, class_name = self.response_schema_class.rsplit(".", 1)
+            module = importlib.import_module(module_name)
+            return getattr(module, class_name)
+        else:
+            return None

@@ -2,7 +2,7 @@ import inspect
 import logging
 from typing import Any, Callable, Iterable, List, Optional, Union
 
-from sembla.schemas.actions import Action, ActionCall, ActionFeedback
+from sembla.schemas.system import Action, ActionCall, ActionOutput, Message
 
 logging.basicConfig(level=logging.INFO)
 
@@ -16,28 +16,38 @@ class ActionModule:
         ]
         self.action_dict = {action.name: action for action in self.actions}
 
-    def perform_action(self, action_call: ActionCall) -> ActionFeedback:
-        action = self.action_dict.get(action_call.action, None)
+    def perform_action(self, action_call: ActionCall) -> ActionOutput:
+        action = self.action_dict.get(action_call.name, None)
         if action:
             try:
                 if action_call.parameters:
                     result = action.callable(**action_call.parameters)
                 else:
                     result = action.callable()
-                return ActionFeedback(
+                return ActionOutput(
                     action=action_call,
                     output=result,
                 )
             except Exception as e:
                 logging.error(f"Error while executing '{action}': {e}")
-                return ActionFeedback(
+                return ActionOutput(
                     action=action_call,
-                    output=f"{type(e).__name__}: {e}",
+                    output=[
+                        Message(
+                            role="user",
+                            content=f"{type(e).__name__}: {e}",
+                        )
+                    ],
                 )
         else:
-            return ActionFeedback(
+            return ActionOutput(
                 action=action_call,
-                output=f"Error: Action '{action_call.action}' not found.",
+                output=[
+                    Message(
+                        role="user",
+                        content=f"Error: Action '{action_call.name}' not found.",
+                    )
+                ],
             )
 
     def get_api_docs(self):

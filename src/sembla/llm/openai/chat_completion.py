@@ -2,7 +2,7 @@ from typing import Dict
 
 import openai
 
-from sembla.schemas.system import Message, SystemState
+from sembla.schemas.system import AgentResponse, Message, SystemState
 
 
 def convert_message_to_openai_format(message: Message) -> Dict[str, str]:
@@ -37,6 +37,7 @@ def generate_chat_completion(system_state: SystemState) -> SystemState:
     )
     top_response = response.choices[0]
     message_content = top_response["message"]["content"].strip()
-    new_state = system_state.copy(update={"agent_response": message_content})
+    agent_response = AgentResponse(raw_response=message_content)
+    new_state = system_state.copy(update={"agent_response": agent_response})
 
     return new_state
